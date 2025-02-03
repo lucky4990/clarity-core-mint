@@ -14,6 +14,7 @@
 ;; Data Variables
 (define-data-var token-count uint u0)
 (define-data-var mint-price uint u10000000) ;; 10 STX
+(define-data-var max-supply uint u1000) ;; Maximum token supply
 
 ;; Data Maps
 (define-map token-metadata uint (string-utf8 256))
@@ -24,6 +25,7 @@
     (
       (token-id (+ (var-get token-count) u1))
     )
+    (asserts! (< (var-get token-count) (var-get max-supply)) (err u105))
     (asserts! (is-eq (stx-transfer? (var-get mint-price) tx-sender contract-owner) (ok true)) (err u1))
     (try! (nft-mint? core-mint-nft token-id tx-sender))
     (map-set token-metadata token-id metadata)
@@ -44,3 +46,13 @@
 
 (define-read-only (get-token-count)
   (ok (var-get token-count)))
+
+(define-read-only (get-max-supply)
+  (ok (var-get max-supply)))
+
+;; Admin functions
+(define-public (set-max-supply (new-max-supply uint))
+  (begin
+    (asserts! (is-eq tx-sender contract-owner) err-owner-only)
+    (var-set max-supply new-max-supply)
+    (ok true)))
